@@ -12,6 +12,8 @@ watch(
     setTimezone(tz);
   },
 );
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
@@ -19,14 +21,15 @@ watch(
     <div id="app" class="flex flex-col h-dvh" :style="colorStore.cssVars">
       <NavBar />
       <BodyLayout class="grow overflow-auto" />
-      <NavFooter />
+      <NavFooter v-if="!isAutoLogin"/>
     </div>
   </UApp>
 </template>
 
 <style scoped>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: monospace ,Avenir, Helvetica, Arial, sans-serif;
+  font-weight: bolder;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;

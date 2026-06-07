@@ -9,6 +9,8 @@ defineProps<{
 }>();
 
 const { showTradeCustomData } = useTradeCustomData();
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
@@ -17,6 +19,7 @@ const { showTradeCustomData } = useTradeCustomData();
       <div class="flex justify-between items-center border-b">
         <h5 class="text-xl font-semibold w-full block mb-1">General</h5>
         <UButton
+          v-if="!isAutoLogin"
           size="sm"
           variant="outline"
           color="neutral"

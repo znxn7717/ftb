@@ -174,7 +174,7 @@ const onRowClicked = (item: Trade) => {
   if (item && item.trade_id !== botStore.activeBot.detailTradeId) {
     botStore.activeBot.setDetailTrade(item);
     if (props.multiBotView) {
-      router.push({ name: 'Freqtrade Trading' });
+      router.push({ name: 'ftb Trading' });
     }
   } else {
     botStore.activeBot.setDetailTrade(null);
@@ -197,6 +197,8 @@ const rowSelection = computed({
     // noop, selection is controlled by activeBot.detailTradeId
   },
 });
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
@@ -230,7 +232,7 @@ const rowSelection = computed({
           `${row.original.pair}${row.original.open_order_id || row.original.has_open_orders ? '*' : ''}`
         }}
       </template>
-      <template #actions-cell="{ row }">
+      <template v-if="!isAutoLogin" #actions-cell="{ row }">
         <TradeActionsPopover
           :id="row.original.trade_id ?? row.index"
           :enable-force-entry="botStore.activeBot.botState.force_entry_enable"

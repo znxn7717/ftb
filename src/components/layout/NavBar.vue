@@ -19,6 +19,8 @@ const loginDialog = useLoginDialog();
 const breakpoints = useBreakpoints(breakpointsTailwind);
 
 const isMobile = breakpoints.smallerOrEqual('md');
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
+const wallet = import.meta.env.VITE_WALLET;
 
 async function clickLogout() {
   botStore.removeBot(botStore.selectedBot);
@@ -56,7 +58,7 @@ const resetDynamicLayout = (): void => {
   }
 };
 const setTitle = () => {
-  let title = 'freqUI';
+  let title = 'ftb';
   if (settingsStore.openTradesInTitle === OpenTradeVizOptions.asTitle) {
     title = `(${botStore.activeBotorUndefined?.openTradeCount}) ${title}`;
   }
@@ -103,31 +105,33 @@ watch(
 // Navigation items array
 const navItems = ref([
   {
-    label: 'Trade',
-    to: '/trade',
-    visible: computed(() => !botStore.canRunBacktest),
-    icon: 'i-mdi-currency-usd',
-  },
-  {
     label: 'Dashboard',
     to: '/dashboard',
     visible: computed(() => !botStore.canRunBacktest),
     icon: 'i-mdi-view-dashboard',
   },
   {
+    label: 'Trade',
+    to: '/trade',
+    visible: computed(() => !botStore.canRunBacktest),
+    icon: 'i-mdi-currency-usd',
+  },
+  {
     label: 'Chart',
     to: '/graph',
+    visible: computed(() => !isAutoLogin),
     icon: 'i-mdi-chart-line',
   },
   {
     label: 'Logs',
     to: '/logs',
+    visible: computed(() => !isAutoLogin),
     icon: 'i-mdi-format-list-bulleted',
   },
   {
     label: 'Settings',
     to: '/settings',
-    mobileOnly: true,
+    mobileOnly: !isAutoLogin,
     icon: 'i-mdi-cog',
   },
   {
@@ -213,9 +217,10 @@ function editBotLogin(botId: string) {
 <template>
   <header>
     <div class="flex border-b border-primary">
-      <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
-        <AppIcon class="h-9 w-9" />
-        <AppText class="md:hidden lg:inline" />
+      <RouterLink v-if="!isAutoLogin" class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
+        <!-- <AppIcon class="h-9 w-9" />
+        <AppText class="md:hidden lg:inline" /> -->
+        <AppText />
       </RouterLink>
       <div class="flex justify-between w-full text-center items-center ms-3">
         <div class="items-center hidden md:flex gap-5 ms-5">
@@ -230,7 +235,7 @@ function editBotLogin(botId: string) {
             color="neutral"
             active-class="underline"
           >
-            {{ item.label }}
+            {{ item.label }} 
           </UButton>
           <ThemeSelect />
         </div>
@@ -247,12 +252,20 @@ function editBotLogin(botId: string) {
             <i-mdi-alert />
           </div>
           <div class="hidden md:flex md:flex-nowrap items-center nav-item me-2">
-            <span class="text-sm me-2" title="Bot name">
+            <span v-if="!isAutoLogin" class="text-sm me-2" title="Bot name">
               {{
                 (botStore.activeBotorUndefined && botStore.activeBotorUndefined.botName) ||
                 'No bot selected'
               }}
             </span>
+            <a 
+              :href="`https://app.coinmarketman.com/hypertracker/wallet/${wallet}`" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="!text-neutral-500 cursor-pointer text-md mr-4"
+            >
+              {{ wallet }}
+            </a>
             <BotEntry
               :bot="botStore.availableBots[botStore.selectedBot]"
               noButtons
@@ -261,11 +274,11 @@ function editBotLogin(botId: string) {
             />
             <BotSelect />
 
-            <ReloadControl class="me-3" title="Confirm Dialog deactivated." />
+            <ReloadControl v-if="!isAutoLogin" class="me-3" title="Confirm Dialog deactivated." />
           </div>
           <div v-if="botStore.hasBots" class="flex items-center">
             <!-- Hide dropdown on xs, instead show below  -->
-            <UDropdownMenu :items="menuItems" size="lg">
+            <UDropdownMenu v-if="!isAutoLogin" :items="menuItems" size="lg">
               <UButton color="neutral" variant="ghost" size="sm" trailing-icon="mdi:chevron-down">
                 <div class="flex items-center">
                   <UAvatar size="sm"> FT </UAvatar>
@@ -274,7 +287,7 @@ function editBotLogin(botId: string) {
             </UDropdownMenu>
           </div>
           <UButton
-            v-else-if="route?.path !== '/login'"
+            v-else-if="route?.path !== '/login' && !isAutoLogin"
             color="neutral"
             @click="loginDialog({})"
             icon="mdi:login"
@@ -283,7 +296,7 @@ function editBotLogin(botId: string) {
         </div>
 
         <!-- Mobile menu -->
-        <div v-if="isMobile" class="ms-auto flex">
+        <div v-if="isMobile && !isAutoLogin" class="ms-auto flex">
           <USlideover
             direction="right"
             :close="{

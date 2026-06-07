@@ -91,12 +91,12 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       label: showText ? 'Time Breakdown' : undefined,
       icon: 'i-mdi-folder-clock',
     },
-    {
+    ...(isAutoLogin ? [] : [{
       slot: 'pairlist',
       value: 'pairlist',
       label: showText ? 'Pairlist' : undefined,
       icon: 'i-mdi-format-list-group',
-    },
+    }]),
     {
       slot: 'pair-locks',
       value: 'pair-locks',
@@ -105,6 +105,8 @@ const tradingTabItems = computed<TabsItem[]>(() => {
     },
   ];
 });
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
@@ -135,7 +137,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         drag-allow-from=".drag-header"
       >
         <DraggableContainer header="Multi Pane">
-          <div class="mt-1 flex justify-center">
+          <div v-if="!isAutoLogin" class="mt-1 flex justify-center">
             <BotControls class="mt-1 mb-2" />
           </div>
           <UTabs color="neutral" :items="tradingTabItems" variant="link" default-value="pairs">

@@ -2,4 +2,5 @@
   <main>
     <RouterView />
   </main>
+  <!-- <FixedFooter />  -->
 </template>

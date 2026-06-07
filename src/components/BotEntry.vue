@@ -40,6 +40,8 @@ const autoRefreshLoc = computed({
     selectedBotStore.value.setAutoRefresh(newValue);
   },
 });
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
@@ -49,7 +51,7 @@ const autoRefreshLoc = computed({
     <div class="flex items-center gap-2">
       <div class="flex items-center">
         <USwitch
-          v-if="!noRefreshSwitch"
+          v-if="!noRefreshSwitch && !isAutoLogin"
           v-model="autoRefreshLoc"
           class="mr-2"
           :title="`Auto refresh for ${bot.botName || bot.botId}`"

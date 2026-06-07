@@ -246,7 +246,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         console.log('Bot already present');
         return;
       }
-      console.log('add bot', bot);
+      // console.log('add bot', bot);
       const botStore = createBotSubStore(bot.botId, bot.botName);
       botStore.botAdded();
       this.botStores[bot.botId] = botStore;

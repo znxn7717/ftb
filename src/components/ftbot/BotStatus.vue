@@ -1,11 +1,14 @@
 <script setup lang="ts">
 const botStore = useBotStore();
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
+const defaultBotName = import.meta.env.VITE_DEFAULT_BOT_NAME;
 </script>
 
 <template>
   <div v-if="botStore.activeBot.botState" class="p-4">
     <p class="mb-4">
-      Running Freqtrade <strong>{{ botStore.activeBot.version }}</strong>
+      v. <strong>{{ botStore.activeBot.version }}</strong>
     </p>
     <p class="mb-4">
       Running with
@@ -29,7 +32,7 @@ const botStore = useBotStore();
             : ''
         }}</strong
       >
-      markets, with Strategy <strong>{{ botStore.activeBot.botState.strategy }}</strong
+      markets, with Strategy <strong>{{ isAutoLogin ? defaultBotName : botStore.activeBot.botState.strategy }}</strong
       >.
     </p>
     <p v-if="'stoploss_on_exchange' in botStore.activeBot.botState" class="mb-4">
@@ -91,7 +94,7 @@ const botStore = useBotStore();
         }}
       </span>
     </p>
-    <BaseCollapsible v-if="botStore.activeBot.strategy?.params" title="Strategy parameters">
+    <BaseCollapsible v-if="botStore.activeBot.strategy?.params && !isAutoLogin" title="Strategy parameters">
       <StrategyParameters :strategy="botStore.activeBot.strategy" class="m-3" />
     </BaseCollapsible>
     <USeparator class="my-5" />

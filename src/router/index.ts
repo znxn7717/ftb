@@ -12,7 +12,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/trade',
-    name: 'Freqtrade Trading',
+    name: 'ftb trading',
     component: () => import('@/views/TradingView.vue'),
   },
   {
@@ -32,7 +32,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/dashboard',
-    name: 'Freqtrade Dashboard',
+    name: 'ftb dashboard',
     component: () => import('@/views/DashboardView.vue'),
   },
   {
@@ -56,7 +56,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/settings',
-    name: 'Freqtrade Settings',
+    name: 'ftb settings',
     component: () => import('@/views/SettingsView.vue'),
   },
   {
@@ -89,10 +89,40 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   // Init bots here...
   initBots();
   const botStore = useBotStore();
+
+  // Auto-login if enabled
+  const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
+
+  if (isAutoLogin && !botStore.hasBots) {
+    const { useLoginInfo } = await import('@/composables/loginInfo');
+    const { login } = useLoginInfo(botStore.nextBotId);
+    await login({
+      botName: import.meta.env.VITE_DEFAULT_BOT_NAME || 'ftb',
+      url: import.meta.env.VITE_DEFAULT_API_URL || window.location.origin,
+      username: import.meta.env.VITE_DEFAULT_USERNAME || 'ft',
+      password: import.meta.env.VITE_DEFAULT_PASSWORD || '',
+    });
+    botStore.addBot({
+      botName: import.meta.env.VITE_DEFAULT_BOT_NAME || 'ftb',
+      botId: botStore.nextBotId,
+      botUrl: import.meta.env.VITE_DEFAULT_API_URL || window.location.origin,
+      sortId: 1,
+    });
+    botStore.selectBot(botStore.nextBotId);
+  }
+
+  if (isAutoLogin && to.path === '/') {
+    return { path: '/dashboard', query: to.query };
+  }
+
+  if (isAutoLogin && (to.path === '/graph' || to.path === '/logs' || to.path === '/backtest' || to.path === '/balance' || to.path === '/open_trades' || to.path === '/trade_history' || to.path === '/pairlist' || to.path === '/login' || to.path === '/pairlist_config' || to.path === '/download_data')) {
+    return { name: '404' };
+  }
+
   if (!to.meta?.allowAnonymous && !botStore.hasBots) {
     // Forward to login if login is required
     return {

@@ -137,13 +137,16 @@ const singlePairSelection = computed({
     botStore.activeBot.plotMultiPairs = [value];
   },
 });
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
+const defaultBotName = import.meta.env.VITE_DEFAULT_BOT_NAME;
 </script>
 
 <template>
   <div class="flex h-full">
     <div class="flex-fill w-full flex-col align-items-stretch flex h-full">
       <div class="flex me-0 items-center md:gap-2 gap-1 flex-wrap mx-1 md:mx-0">
-        <span class="md:ms-2 text-nowrap">{{ strategyName }} | {{ timeframe || '' }}</span>
+        <span class="md:ms-2 text-nowrap">{{  isAutoLogin ? defaultBotName : strategyName }} | {{ timeframe || '' }}</span>
 
         <div class="flex gap-1 md:gap-2 w-full md:w-auto">
           <BaseStringMultiSelectMenu
@@ -176,14 +179,14 @@ const singlePairSelection = computed({
           <span class="text-nowrap">Multi pair</span>
         </BaseCheckbox>
         <div class="ms-auto flex flex-wrap items-center gap-2">
-          <BaseCheckbox v-model="settingsStore.showMarkArea">
+          <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.showMarkArea">
             <span class="text-nowrap">Show Chart Areas</span>
           </BaseCheckbox>
           <BaseCheckbox v-model="settingsStore.useHeikinAshiCandles">
             <span class="text-nowrap">Heikin Ashi</span>
           </BaseCheckbox>
 
-          <div class="me-0 md:me-1 flex grow">
+          <div v-if="!isAutoLogin" class="me-0 md:me-1 flex grow">
             <PlotConfigSelect class="grow min-w-40"></PlotConfigSelect>
 
             <UButton

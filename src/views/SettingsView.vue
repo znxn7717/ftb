@@ -21,18 +21,20 @@ const resetDynamicLayout = () => {
   layoutStore.resetDashboardLayout();
   showAlert('Layouts have been reset.');
 };
+
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>
   <UCard class="mx-auto mt-3 p-4 max-w-4xl">
-    <template #header><span class="text-2xl font-bold">FreqUI Settings</span></template>
+    <template #header><span class="text-2xl font-bold">Settings</span></template>
     <div class="flex flex-col gap-4 text-start dark:text-neutral-300">
       <p class="text-left">UI Version: {{ settingsStore.uiVersion }}</p>
 
       <div class="border border-neutral-400 rounded-sm p-4 space-y-4">
         <h4 class="text-xl font-semibold">UI settings</h4>
 
-        <BaseCheckbox v-model="layoutStore.layoutLocked" class="space-y-1">
+        <BaseCheckbox v-if="!isAutoLogin" v-model="layoutStore.layoutLocked" class="space-y-1">
           Lock dynamic layouts
           <template #hint>
             Lock dynamic layouts, so they cannot move anymore. Can also be set from the navbar at
@@ -40,7 +42,7 @@ const resetDynamicLayout = () => {
           </template>
         </BaseCheckbox>
 
-        <div class="flex flex-row items-center gap-2 space-y-2">
+        <div v-if="!isAutoLogin" class="flex flex-row items-center gap-2 space-y-2">
           <UButton color="neutral" size="md" class="mb-0" @click="resetDynamicLayout"
             >Reset layout</UButton
           >
@@ -49,7 +51,7 @@ const resetDynamicLayout = () => {
           >
         </div>
 
-        <USeparator />
+        <USeparator v-if="!isAutoLogin"/>
 
         <div class="space-y-1">
           <label class="block text-sm">Show open trades in header</label>
@@ -73,12 +75,12 @@ const resetDynamicLayout = () => {
           >
         </div>
 
-        <BaseCheckbox v-model="settingsStore.backgroundSync" class="space-y-1">
+        <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.backgroundSync" class="space-y-1">
           Background sync
           <template #hint> Keep background sync running while other bots are selected. </template>
         </BaseCheckbox>
 
-        <BaseCheckbox v-model="settingsStore.confirmDialog" class="space-y-1">
+        <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.confirmDialog" class="space-y-1">
           Show Confirm Dialog for Trade Exits
           <template #hint
             >Use confirmation dialogs when force-exiting a trade.<br />
@@ -88,7 +90,7 @@ const resetDynamicLayout = () => {
           </template>
         </BaseCheckbox>
 
-        <BaseCheckbox v-model="settingsStore.multiPaneButtonsShowText" class="space-y-1">
+        <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.multiPaneButtonsShowText" class="space-y-1">
           Show Text on Multi Pane Buttons
           <template #hint
             >Show text on multi pane buttons. If disabled, only shows images.</template
@@ -202,16 +204,16 @@ const resetDynamicLayout = () => {
           <BaseCheckbox v-model="settingsStore.notifications[FtWsMessageTypes.exitFill]">
             Exit notifications
           </BaseCheckbox>
-          <BaseCheckbox v-model="settingsStore.notifications[FtWsMessageTypes.entryCancel]">
+          <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.notifications[FtWsMessageTypes.entryCancel]">
             Entry Cancel notifications
           </BaseCheckbox>
-          <BaseCheckbox v-model="settingsStore.notifications[FtWsMessageTypes.exitCancel]">
+          <BaseCheckbox v-if="!isAutoLogin" v-model="settingsStore.notifications[FtWsMessageTypes.exitCancel]">
             Exit Cancel notifications
           </BaseCheckbox>
         </div>
       </div>
 
-      <div class="border rounded-sm border-neutral-400 p-4 space-y-4">
+      <div v-if="!isAutoLogin" class="border rounded-sm border-neutral-400 p-4 space-y-4">
         <h4 class="text-lg font-semibold">Backtesting settings</h4>
         <div>
           <label for="backtestMetrics" class="block">Backtesting metrics</label>
