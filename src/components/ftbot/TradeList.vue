@@ -67,7 +67,9 @@ const tableFields = ref([
       ]),
 ]);
 
-if (props.multiBotView) {
+const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
+
+if (props.multiBotView && !isAutoLogin) {
   tableFields.value.unshift({ field: 'botName', header: 'Bot' });
 }
 
@@ -197,8 +199,6 @@ const rowSelection = computed({
     // noop, selection is controlled by activeBot.detailTradeId
   },
 });
-
-const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>
 
 <template>

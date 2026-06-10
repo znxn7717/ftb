@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useAppKit } from '@reown/appkit/vue'
-import { useAppKitAccount } from "@reown/appkit/vue";
-import { useDisconnect } from "@reown/appkit/vue";
+import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/vue'
 
 const { open } = useAppKit()
 const { disconnect } = useDisconnect();

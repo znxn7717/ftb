@@ -26,7 +26,7 @@ const gridLayoutData = computed((): GridItemData[] => {
 
 function layoutUpdatedEvent(newLayout) {
   if (isResizableLayout.value) {
-    console.log('newlayout', newLayout);
+    // console.log('newlayout', newLayout);
     console.log('saving dashboard');
     layoutStore.dashboardLayout = newLayout;
   }

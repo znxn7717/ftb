@@ -55,6 +55,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/components/ftbot/PairListLive.vue'),
   },
   {
+    path: '/cloning',
+    name: 'ftb cloning',
+    component: () => import('@/views/CloningView.vue'),
+  },
+  {
     path: '/settings',
     name: 'ftb settings',
     component: () => import('@/views/SettingsView.vue'),

@@ -8,6 +8,7 @@ blockExoticSubdeps: true
 preferFrozenLockfile: true
 allowBuilds:
   '@parcel/watcher': true
+  '@reown/appkit': false
   '@tailwindcss/oxide': true
   esbuild: true
   vue-demi: true

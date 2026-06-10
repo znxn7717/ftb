@@ -83,7 +83,8 @@ const walletHistoryOptions: ComputedRef<EChartsOption> = computed(() => {
   const captureLineColor = settingsStore.chartTheme === 'dark' ? '#c2c2c2' : '#4b5563';
 
   walletEntries.forEach(([botId, history], botIndex) => {
-    const botName = history.botName ?? botId;
+    // const botName = history.botName ?? botId;
+    const botName = import.meta.env.VITE_DEFAULT_BOT_NAME || history.botName;
     const colDate = history.columns.findIndex((el) => el === '__date_ts');
     const colTotal = history.columns.findIndex((el) => el === 'total_quote');
     const startingField = history.data[0];

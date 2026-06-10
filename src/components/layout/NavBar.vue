@@ -59,12 +59,12 @@ const resetDynamicLayout = (): void => {
 };
 const setTitle = () => {
   let title = 'ftb';
-  if (settingsStore.openTradesInTitle === OpenTradeVizOptions.asTitle) {
-    title = `(${botStore.activeBotorUndefined?.openTradeCount}) ${title}`;
-  }
-  if (botStore.activeBotorUndefined?.botName) {
-    title = `${title} - ${botStore.activeBotorUndefined?.botName}`;
-  }
+  // if (settingsStore.openTradesInTitle === OpenTradeVizOptions.asTitle) {
+  //   title = `(${botStore.activeBotorUndefined?.openTradeCount}) ${title}`;
+  // }
+  // if (botStore.activeBotorUndefined?.botName) {
+  //   title = `${title} - ${botStore.activeBotorUndefined?.botName}`;
+  // }
   document.title = title;
 };
 
@@ -126,6 +126,12 @@ const navItems = ref([
     label: 'Logs',
     to: '/logs',
     visible: computed(() => !isAutoLogin),
+    icon: 'i-mdi-format-list-bulleted',
+  },
+  {
+    label: 'Cloning',
+    to: '/cloning',
+    visible: computed(() => isAutoLogin),
     icon: 'i-mdi-format-list-bulleted',
   },
   {
@@ -217,10 +223,10 @@ function editBotLogin(botId: string) {
 <template>
   <header>
     <div class="flex border-b border-primary">
-      <RouterLink v-if="!isAutoLogin" class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
-        <!-- <AppIcon class="h-9 w-9" />
-        <AppText class="md:hidden lg:inline" /> -->
-        <AppText />
+      <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
+        <AppIcon class="h-13 w-13 ml-2" />
+        <!-- <AppText class="md:hidden lg:inline" />
+        <AppText /> -->
       </RouterLink>
       <div class="flex justify-between w-full text-center items-center ms-3">
         <div class="items-center hidden md:flex gap-5 ms-5">
@@ -262,7 +268,7 @@ function editBotLogin(botId: string) {
               :href="`https://app.coinmarketman.com/hypertracker/wallet/${wallet}`" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="!text-neutral-500 cursor-pointer text-md mr-4"
+              class="!text-neutral-500 cursor-pointer text-sm mr-4"
             >
               {{ wallet }}
             </a>

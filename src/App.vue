@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '@/plugins/walletconnect'
+
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 onMounted(() => {

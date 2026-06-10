@@ -13,6 +13,11 @@ import type {
 const AUTH_LOGIN_INFO = 'ftAuthLoginInfo';
 const APIBASE = '/api/v1';
 
+// remove previous AUTH_LOGIN_INFO to add new
+if (typeof window !== 'undefined') {
+  localStorage.removeItem(AUTH_LOGIN_INFO);
+}
+
 // Global state for all login infos
 const allLoginInfos = useStorage<AuthStorageMulti>(AUTH_LOGIN_INFO, {});
 
