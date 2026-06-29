@@ -1,5 +1,7 @@
+// src/router/index.ts
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
+import { useLoginInfo } from '@/composables/loginInfo';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -94,27 +96,42 @@ const router = createRouter({
   routes,
 });
 
+
 router.beforeEach(async (to) => {
   // Init bots here...
   initBots();
   const botStore = useBotStore();
+  const agentsStore = useAgentsStore();
 
   // Auto-login if enabled
   const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 
   if (isAutoLogin && !botStore.hasBots) {
-    const { useLoginInfo } = await import('@/composables/loginInfo');
+
+    if (agentsStore.agents.length === 0) {
+      try {
+        await agentsStore.fetchAgents();
+      } catch (e) {
+        console.error('Failed to fetch agents:', e);
+      }
+    }
+
+    const defaultApiUrl = import.meta.env.VITE_DEFAULT_API_URL || window.location.origin;
+    const apiUrl = agentsStore.currentSubdomain
+      ? defaultApiUrl.replace('://', `://${agentsStore.currentSubdomain}-`)
+      : defaultApiUrl;
+
     const { login } = useLoginInfo(botStore.nextBotId);
     await login({
       botName: import.meta.env.VITE_DEFAULT_BOT_NAME || 'ftb',
-      url: import.meta.env.VITE_DEFAULT_API_URL || window.location.origin,
+      url: apiUrl,
       username: import.meta.env.VITE_DEFAULT_USERNAME || 'ft',
       password: import.meta.env.VITE_DEFAULT_PASSWORD || '',
     });
     botStore.addBot({
       botName: import.meta.env.VITE_DEFAULT_BOT_NAME || 'ftb',
       botId: botStore.nextBotId,
-      botUrl: import.meta.env.VITE_DEFAULT_API_URL || window.location.origin,
+      botUrl: apiUrl,
       sortId: 1,
     });
     botStore.selectBot(botStore.nextBotId);

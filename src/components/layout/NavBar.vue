@@ -5,7 +5,9 @@ import { useRoute } from 'vue-router';
 import type { DropdownMenuItem } from '@nuxt/ui';
 import { breakpointsTailwind } from '@vueuse/core';
 import type { AuthStorageWithBotId } from '@/types';
+import { useAgentsStore } from '@/stores/agents'
 
+const agentsStore = useAgentsStore()
 const botStore = useBotStore();
 
 const settingsStore = useSettingsStore();
@@ -20,7 +22,10 @@ const breakpoints = useBreakpoints(breakpointsTailwind);
 
 const isMobile = breakpoints.smallerOrEqual('md');
 const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
-const wallet = import.meta.env.VITE_WALLET;
+const wallet = computed(() => {
+  if (agentsStore.loading) return null
+  return agentsStore.currentAgentAddress || import.meta.env.VITE_WALLET
+})
 
 async function clickLogout() {
   botStore.removeBot(botStore.selectedBot);
@@ -264,13 +269,15 @@ function editBotLogin(botId: string) {
                 'No bot selected'
               }}
             </span>
-            <a 
+            <a
+              v-if="wallet"
               :href="`https://app.coinmarketman.com/hypertracker/wallet/${wallet}`" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="!text-neutral-500 cursor-pointer text-sm mr-4"
+              class="!text-neutral-500 cursor-pointer text-xs mr-4 inline-flex flex-col items-center"
             >
-              {{ wallet }}
+              <span>running on:</span>
+              <span>{{ wallet }}</span>
             </a>
             <BotEntry
               :bot="botStore.availableBots[botStore.selectedBot]"

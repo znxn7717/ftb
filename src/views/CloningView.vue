@@ -2,7 +2,13 @@
 import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/vue'
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts'
 import { useSignTypedData } from '@wagmi/vue'
+import { useAgentsStore } from '@/stores/agents'
 
+const agentsStore = useAgentsStore()
+const wallet = computed(() => {
+  if (agentsStore.loading) return null
+  return agentsStore.currentAgentAddress || import.meta.env.VITE_WALLET
+})
 const { open } = useAppKit()
 const { disconnect } = useDisconnect()
 const { signTypedDataAsync } = useSignTypedData()
@@ -13,11 +19,13 @@ const agentAddress = ref('')
 const balance = ref('')
 const signatureStatus = ref<'idle' | 'pending' | 'success' | 'error'>('idle')
 const builderFeeStatus = ref<'idle' | 'pending' | 'success' | 'error'>('idle')
+const uncloneStatus = ref<'idle' | 'pending' | 'success'>('idle')
 const connectionError = ref('')
 const agentError = ref('')
 const builderError = ref('')
 const agentStatusMessage = ref('')
 const builderStatusMessage = ref('')
+const uncloneStatusMessage = ref('')
 const approvedAgentDetails = ref<{
   name: string
   address: string
@@ -29,10 +37,73 @@ const extraAgents = ref<Array<{
   validUntil: number
 }>>([])
 
+// DB agent record
+const dbAgent = ref<{
+  connected_address: string
+  agent_name: string
+  agent_private_key: string
+  agent_address: string
+  agent_valid_until: number
+  balance: string
+  cloned: boolean
+  builder_address: string
+  builder_approved_status: boolean
+  updated_at: string
+} | null>(null)
+
 const isConnected = computed(() => eip155Account.value?.isConnected ?? false)
 const connectedAddress = computed(() => eip155Account.value?.address?.toLowerCase() ?? '')
 const accountDataLoaded = ref(false)
 const showStartCard = computed(() => !isConnected.value || !accountDataLoaded.value)
+
+// Dashboard subdomain URL
+const dashboardUrl = computed(() => {
+  if (!connectedAddress.value) return ''
+  const last4 = connectedAddress.value.slice(-4).toLowerCase()
+  const hostname = window.location.hostname
+  // Remove existing subdomain if any, to get base domain
+  const parts = hostname.split('.')
+  const baseDomain = parts.length > 3 ? parts.slice(1).join('.') : hostname
+  return `https://${last4}.${baseDomain}`
+})
+
+/**
+ * Determine display mode based on DB record
+ * Returns: 'new' | 'cloned_done' | 'cloning_in_progress' | 'needs_reapprove'
+ */
+const dbDisplayMode = computed(() => {
+  if (!dbAgent.value) return 'new'
+
+  const now = Date.now()
+  // Add Z if no timezone to parse as UTC
+  const updatedAtStr = dbAgent.value.updated_at.endsWith('Z') || dbAgent.value.updated_at.includes('+')
+  ? dbAgent.value.updated_at
+  : dbAgent.value.updated_at + 'Z'
+  const updatedAt = new Date(updatedAtStr).getTime()
+  const minutesSinceUpdate = (now - updatedAt) / (1000 * 60)
+  const daysUntilExpiry = (dbAgent.value.agent_valid_until - now) / (1000 * 60 * 60 * 24)
+
+  // Check if the agent_address from the database exists in the extraAgents list
+  const agentExistsOnChain = extraAgents.value.some(a => a.address === dbAgent.value!.agent_address)
+
+  // Case 3: cloned but builder not approved, or expiring soon (< 15 days)
+  if (dbAgent.value.cloned && (!dbAgent.value.builder_approved_status || daysUntilExpiry < 15 || !agentExistsOnChain)) {
+    return 'needs_reapprove'
+  }
+
+  // Case 1: cloned successfully
+  if (dbAgent.value.cloned) {
+    return 'cloned_done'
+  }
+
+  // Case 2: not cloned yet but updated recently (< 15 min)
+  if (!dbAgent.value.cloned && minutesSinceUpdate < 15) {
+    return 'cloning_in_progress'
+  }
+
+  // Case 4: not cloned and updated long ago (> 15 min)
+  return 'needs_reapprove'
+})
 
 /**
  * Fetch USDC balance from Hyperliquid API
@@ -82,6 +153,39 @@ const fetchExtraAgents = async (addr: string) => {
 }
 
 /**
+ * Fetch agent from database
+ * Only throws (causing accountDataLoaded = false) if error is NOT 404 not found
+ */
+const fetchAgentFromDB = async (addr: string) => {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_AGENTS_BACKEND}/api/get_agent/${addr}`, {headers: {'X-API-Key': import.meta.env.VITE_AGENTS_BACKEND_API_KEY}})
+    
+    if (res.ok) {
+      dbAgent.value = await res.json()
+      return
+    }
+
+    const error = await res.json()
+
+    // 404 not found = new user, not an error
+    if (res.status === 404 && error.detail?.includes('not found')) {
+      dbAgent.value = null
+      return
+    }
+
+    // Any other error = real problem
+    throw new Error(error.detail || 'Failed to fetch agent from database')
+  } catch (e: any) {
+    // If it's our own thrown error (non-404), re-throw to fail accountDataLoaded
+    if (e.message !== 'Failed to fetch agent from database') {
+      // Network error or unexpected
+      throw new Error(e.message || 'Failed to connect to database')
+    }
+    throw e
+  }
+}
+
+/**
  * Calculate remaining days until expiration
  */
 const getRemainingDays = (validUntil: number) => {
@@ -100,7 +204,7 @@ const approveBuilderFee = async () => {
   
   try {
     const builderAddress = import.meta.env.VITE_BUILDER_ADDRESS
-    const maxFeeRate = '1%'
+    const maxFeeRate = '0.1%'
     const nonce = Date.now()
 
     const signature = await signTypedDataAsync({
@@ -429,10 +533,11 @@ const handleStart = async () => {
  */
 const saveAgentToDatabase = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_AGENTS_BACKEND}/api/agents`, {
+    const response = await fetch(`${import.meta.env.VITE_AGENTS_BACKEND}/api/add_agent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': import.meta.env.VITE_AGENTS_BACKEND_API_KEY
       },
       body: JSON.stringify({
         connected_address: connectedAddress.value,
@@ -443,7 +548,7 @@ const saveAgentToDatabase = async () => {
         balance: balance.value,
         cloned: false,
         builder_address: import.meta.env.VITE_BUILDER_ADDRESS,
-        builder_approved_checked: true
+        builder_approved_status: true
       })
     })
 
@@ -453,7 +558,7 @@ const saveAgentToDatabase = async () => {
     }
 
     const data = await response.json()
-    console.log('Agent saved successfully:', data)
+    // console.log('Agent saved successfully:', data)
     builderFeeStatus.value = 'success'
     builderStatusMessage.value = ''
     
@@ -466,31 +571,76 @@ const saveAgentToDatabase = async () => {
   }
 }
 
+const handleUnclone = async () => {
+  uncloneStatus.value = 'pending'
+  try {
+    const res = await fetch(`${import.meta.env.VITE_AGENTS_BACKEND}/api/unclone_and_remove_agents?connected_address=${connectedAddress.value}`, {
+      method: 'POST',
+      headers: { 'X-API-Key': import.meta.env.VITE_AGENTS_BACKEND_API_KEY }
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      uncloneStatus.value = 'idle'
+      uncloneStatusMessage.value = data.detail || 'Failed to remove agent'
+      return
+    }
+    uncloneStatus.value = 'success'
+    uncloneStatusMessage.value = data.message || 'Agent removed successfully'
+    setTimeout(async () => {
+      uncloneStatusMessage.value = ''
+      uncloneStatus.value = 'idle'
+      await disconnect()
+    }, 3000)
+  } catch (e: any) {
+    uncloneStatus.value = 'idle'
+    uncloneStatusMessage.value = e.message || 'Failed to remove agent'
+  }
+}
 
 watch(connectedAddress, async (addr) => {
   if (addr) {
     accountDataLoaded.value = false
+    dbAgent.value = null
     try {
       connectionError.value = ''
       await Promise.all([
         fetchBalance(addr),
         fetchExtraAgents(addr).catch(() => { extraAgents.value = [] }),
+        fetchAgentFromDB(addr).catch((e: any) => { throw e }), // fetchAgentFromDB: only throws on non-404 errors
       ])
+
+      // After all (Promise.all) data loaded, now dbDisplayMode is correct (extraAgents is ready), If DB has agent data, pre-populate approvedAgentDetails and keys
+      if (dbAgent.value && ['cloned_done', 'cloning_in_progress'].includes(dbDisplayMode.value)) {
+        agentPrivateKey.value = dbAgent.value.agent_private_key
+        agentAddress.value = dbAgent.value.agent_address
+        approvedAgentDetails.value = {
+          name: dbAgent.value.agent_name,
+          address: dbAgent.value.agent_address,
+          validUntil: dbAgent.value.agent_valid_until
+        }
+        signatureStatus.value = 'success'
+        builderFeeStatus.value = 'success'
+      }
+
       accountDataLoaded.value = true
       // Auto trigger agent approval after successful connection
       // await approveAgent(addr)
     } catch (e: any) {
       connectionError.value = e.message || 'Failed to fetch account data'
+      await disconnect()
     }
   } else {
     balance.value = ''
+    dbAgent.value = null
     signatureStatus.value = 'idle'
     builderFeeStatus.value = 'idle'
+    uncloneStatus.value = 'idle'
     connectionError.value = ''
     agentError.value = ''
     builderError.value = ''
     agentStatusMessage.value = ''
     builderStatusMessage.value = ''
+    uncloneStatusMessage.value = ''
     approvedAgentDetails.value = null
     extraAgents.value = []
   }
@@ -504,8 +654,8 @@ onBeforeUnmount(async () => {
 <template>
   <div class="mx-auto mt-5 max-w-4xl space-y-4">
     <!-- Header -->
-    <div class="text-center space-y-8 mb-12">
-      <h1>this part is developing... don't try...</h1>
+    <div class="text-center space-y-8 mb-2">
+      <h1>❢ this part is developing... don't try...</h1>
       <h2 class="inline-flex items-baseline text-3xl font-bold dark:text-neutral-100 mt-[-2rem]">
         3 steps to cloning 
         <AppIcon class="h-13 w-13 ml-5 mr-5 relative top-4" />
@@ -534,10 +684,10 @@ onBeforeUnmount(async () => {
     </div>
 
     <!-- Start Card - Only shown when not connected -->
-    <UCard v-if="showStartCard" class="p-8">
+    <UCard v-if="showStartCard" class="p-1">
       <div class="flex flex-col items-center gap-6">
         <p class="text-sm text-neutral-600 dark:text-neutral-400 text-center">
-          Let's Start
+          Let's Do It
         </p>
         <UButton 
           color="primary" 
@@ -580,7 +730,7 @@ onBeforeUnmount(async () => {
             <span class="text-neutral-600 dark:text-neutral-400">Perps Account Balance:</span>
             <span class="font-semibold" :class="Number(balance) < 150 ? 'text-yellow-500' : ''">
               ${{ balance }}
-              <span  v-if="Number(balance) < 150" class="text-xs">
+              <span v-if="Number(balance) < 150" class="text-xs">
                 (Better to top up to at least $150)
               </span>
             </span>
@@ -623,25 +773,32 @@ onBeforeUnmount(async () => {
       <UCard>
         <template #header>
           <div class="flex items-center">
-            <h3 v-if="signatureStatus === 'success'" class="text-xl font-semibold"><span class="text-green-500 mr-5">✓</span>2. Agent Approved</h3>
-            <h3 v-else-if="signatureStatus === 'error'" class="text-xl font-semibold"><span class="text-red-500 mr-5">✗</span>2. Agent Approval Failed</h3>
-            <h3 v-else class="text-xl font-semibold"><span class="text-yellow-500 mr-5">□</span>2. Waiting for Agent Approval</h3>
+            <h3 v-if="signatureStatus === 'success'" class="text-xl font-semibold">
+              <span class="text-green-500 mr-5">✓</span>2. Agent Approved
+            </h3>
+            <h3 v-else-if="signatureStatus === 'error'" class="text-xl font-semibold">
+              <span class="text-red-500 mr-5">✗</span>2. Agent Approval Failed
+            </h3>
+            <h3 v-else class="text-xl font-semibold">
+              <span class="text-yellow-500 mr-5">□</span>2. Waiting for Agent Approval
+            </h3>
           </div>
         </template>
 
         <div class="space-y-3">
-          <p v-if="signatureStatus !== 'success'" class="text-sm text-neutral-600 dark:text-neutral-400 leading-loose">
-            Please approve the trading agent in your wallet.
-          </p>
-
-          <UButton 
-            v-if="signatureStatus !== 'success'"
-            color="primary"
-            size="xl"
-            @click="approveAgent(connectedAddress)"
-          >
-            Approve Agent
-          </UButton>
+          <!-- Show button only when not success and mode is new/needs_reapprove -->
+          <template v-if="signatureStatus !== 'success'">
+            <p class="text-sm text-neutral-600 dark:text-neutral-400 leading-loose">
+              Please approve the trading agent in your wallet.
+            </p>
+            <UButton 
+              color="primary"
+              size="xl"
+              @click="approveAgent(connectedAddress)"
+            >
+              Approve Agent
+            </UButton>
+          </template>
 
           <div v-if="signatureStatus === 'pending' && agentStatusMessage" class="text-sm text-yellow-500">
             {{ agentStatusMessage }}
@@ -689,25 +846,32 @@ onBeforeUnmount(async () => {
       <UCard v-if="signatureStatus === 'success'">
         <template #header>
           <div class="flex items-center">
-            <h3 v-if="builderFeeStatus === 'success'" class="text-xl font-semibold"><span class="text-green-500 mr-5">✓</span>3. Fee Share Approved</h3>
-            <h3 v-else-if="builderFeeStatus === 'error'" class="text-xl font-semibold"><span class="text-red-500 mr-5">✗</span>3. Fee Share Approval Failed</h3>
-            <h3 v-else class="text-xl font-semibold"><span class="text-yellow-500 mr-5">□</span>3. Waiting for Fee Share Approval</h3>
+            <h3 v-if="builderFeeStatus === 'success'" class="text-xl font-semibold">
+              <span class="text-green-500 mr-5">✓</span>3. Fee Share Approved
+            </h3>
+            <h3 v-else-if="builderFeeStatus === 'error'" class="text-xl font-semibold">
+              <span class="text-red-500 mr-5">✗</span>3. Fee Share Approval Failed
+            </h3>
+            <h3 v-else class="text-xl font-semibold">
+              <span class="text-yellow-500 mr-5">□</span>3. Waiting for Fee Share Approval
+            </h3>
           </div>
         </template>
 
         <div class="space-y-3">
-          <p v-if="builderFeeStatus !== 'success'" class="text-sm text-neutral-600 dark:text-neutral-400 leading-loose">
-            Please approve the fee share in your wallet.
-          </p>
-
-          <UButton 
-            v-if="builderFeeStatus !== 'success'"
-            color="primary"
-            size="xl"
-            @click="approveBuilderFee"
-          >
-            Approve Fee Share
-          </UButton>
+          <!-- Show button only when not success and mode requires action -->
+          <template v-if="builderFeeStatus !== 'success'">
+            <p class="text-sm text-neutral-600 dark:text-neutral-400 leading-loose">
+              Please approve the fee share in your wallet.
+            </p>
+            <UButton 
+              color="primary"
+              size="xl"
+              @click="approveBuilderFee"
+            >
+              Approve Fee Share
+            </UButton>
+          </template>
 
           <div v-if="builderFeeStatus === 'pending' && builderStatusMessage" class="text-sm text-yellow-500">
             {{ builderStatusMessage }}
@@ -716,7 +880,7 @@ onBeforeUnmount(async () => {
           <div v-if="builderFeeStatus === 'error'" class="space-y-2">
             <div class="flex items-center gap-2 text-red-500">
               <span>✗</span>
-              <span class="text-sm">Commission approval failed</span>
+              <span class="text-sm">Fee share approval failed</span>
             </div>
             <p class="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 p-3 rounded">
               {{ builderError }}
@@ -726,17 +890,57 @@ onBeforeUnmount(async () => {
           <div v-if="builderFeeStatus === 'success'" class="bg-green-50 dark:bg-green-950/30 rounded p-4 space-y-3">
             <div class="flex items-center gap-2 text-green-700 dark:text-green-400">
               <span>✓</span>
-              <h4 class="font-semibold">Setup Complete!</h4>
+              <h4 class="font-semibold">
+                <!-- Case 1: fully cloned -->
+                <template v-if="dbDisplayMode === 'cloned_done'">All set!</template>
+                <!-- Case 2: cloning in progress -->
+                <template v-else>Setup Complete!</template>
+              </h4>
             </div>
             <p class="text-sm text-neutral-700 dark:text-neutral-300">
-              Your setup is complete. The cloning process has started and will be available shortly at your dashboard.
+              <template v-if="dbDisplayMode === 'cloned_done'">
+                The cloning process is finished. Your dashboard is live and ready.
+              </template>
+              <template v-else>
+                Your setup is complete. The cloning process has started and will be available shortly at your dashboard.
+              </template>
             </p>
-            <p class="text-xs text-neutral-600 dark:text-neutral-400 font-mono bg-white dark:bg-neutral-900 p-3 rounded">
-              Dashboard URL: /dashboard/{{ connectedAddress }}
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 font-mono bg-white dark:bg-neutral-900 p-3 rounded flex items-center justify-between">
+              <span class="text-left">Dashboard URL: <a :href="dashboardUrl" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">{{ dashboardUrl }}</a></span>
+              <UButton
+                v-if="dbDisplayMode === 'cloned_done'"
+                color="error"
+                size="xs"
+                :loading="uncloneStatus === 'pending'"
+                @click="handleUnclone"
+              >
+                Uncloning
+              </UButton>
             </p>
+            <p v-if="uncloneStatusMessage" :class="uncloneStatus === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-500'" class="text-xs">{{ uncloneStatusMessage }}</p>
           </div>
         </div>
       </UCard>
+
     </template>
+
+    <!-- Readme -->
+    <UCard class="mt-4 text-left">
+      <template #header>
+        <h3 class="text-xl font-semibold"><span class="mr-5">ⓘ</span>README</h3>
+      </template>
+      <ol class="space-y-4 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-inside">
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Connect Wallet:</span> Your wallet address is used to identify your agent. No funds are transferred - your account is managed as <span class="text-yellow-500 font-semibold">non-custodial</span> by the agent.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Approve Agent:</span> A dedicated trading agent is approved on Hyperliquid to execute trades on your behalf. Valid for 180 days.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Approve Fee Share:</span> You approve a max 0.1% fee, which allows agent to operate. This is a native management fee mechanism - no extra charges.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Cloning:</span> After approvals, your personal ftb instance is cloned with its own dashboard to monitor trades and metrics. Cloning preparation takes less than 3 minutes.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Revoking either approval will trigger uncloning:</span> Your ftb instance will be uncloned automatically.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Agent expiry causes uncloning:</span> If you don't renew your agent before it expires, your instance will be shut down automatically.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Open positions are NOT managed or closed during uncloning:</span> Make sure to handle them manually.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">You can reconnect wallet anytime:</span> Click the Start button and connect wallet to check approval status or renew your agent.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Minimum balance:</span> ftb can manage up to 12 trading pairs simultaneously for now. Assuming the minimum Hyperliquid futures trade is ~$12, a USDC Perp balance of at least <span class="text-yellow-500 font-semibold">$150</span> is recommended to allow full capacity operation.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Verify agent activity:</span> All trades executed by your agent are fully transparent and verifiable on-chain. You can audit your agent's performance and trade history via <a :href="`https://app.coinmarketman.com/hypertracker/wallet/${wallet}`" target="_blank" rel="noopener noreferrer" class="text-yellow-500 underline hover:opacity-80">Tracker</a>.</li>
+      </ol>
+    </UCard>
   </div>
 </template>

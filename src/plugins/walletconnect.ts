@@ -1,5 +1,5 @@
 import { createAppKit } from '@reown/appkit/vue'
-import { arbitrum, mainnet, type AppKitNetwork } from '@reown/appkit/networks'
+import { arbitrum, type AppKitNetwork } from '@reown/appkit/networks'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 
 // 1. Get projectId from https://dashboard.reown.com
@@ -7,14 +7,14 @@ const projectId = import.meta.env.VITE_REOWN_PROJECT_ID
 
 // 2. Create a metadata object
 const metadata = {
-  name: projectId,
-  description: 'Cloning ftb',
-  url: 'https://xxx.cc.cd', // origin must match your domain & subdomain
-  icons: ['url(@/assets/ftb-logo-mask.png)']
+  name: 'ftb',
+  description: 'Cloning FTB – DeFi Manager',
+  url: window.location.origin, // origin must match your domain & subdomain
+  icons: ['https://i.ibb.co/kVMyC93X/ftb-logo-mask.png']
 }
 
 // 3. Set the networks
-const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, arbitrum]
+const networks: [AppKitNetwork, ...AppKitNetwork[]] = [arbitrum]
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
@@ -39,6 +39,11 @@ const modal = createAppKit({
     onramp: false,
     connectMethodsOrder: ["wallet"],
   },
+  themeVariables: {
+    "--apkt-font-family": "monospace",
+    "--apkt-accent": "primary",
+    "--apkt-border-radius-master": "4px",
+  },
 })
 
-export { modal }
+export { modal, wagmiAdapter }

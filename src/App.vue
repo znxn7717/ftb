@@ -1,12 +1,21 @@
+<!-- src/App.vue -->
 <script setup lang="ts">
-import '@/plugins/walletconnect'
-
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
-onMounted(() => {
+const router = useRouter();
+const currentPath = window.location.pathname;
+
+onMounted(async () => {
   setTimezone(settingsStore.timezone);
   colorStore.updateProfitLossColor();
+  
+  // When reloading on other routes, first go to / > /dashboard for auto-login and bot initialization, then redirect to the actual route
+  await router.replace(router.currentRoute.value.fullPath);
+  if (currentPath === "/trade" || currentPath === "/cloning" || currentPath === "/settings") {
+    await router.replace(currentPath);
+  }
 });
+
 watch(
   () => settingsStore.timezone,
   (tz) => {
@@ -14,6 +23,24 @@ watch(
     setTimezone(tz);
   },
 );
+
+
+import { modal } from '@/plugins/walletconnect'
+// Map app theme to AppKit theme mode
+function getAppKitThemeMode(theme: string): 'light' | 'dark' {
+  const t = theme.toLowerCase()
+  return (t === 'dark' || t === 'bootstrap_dark') ? 'dark' : 'light'
+}
+// Sync AppKit modal theme with the active app theme
+watch(
+  () => settingsStore.currentTheme,
+  (newTheme) => {
+    if (newTheme) {
+      modal.setThemeMode?.(getAppKitThemeMode(newTheme))
+    }
+  },
+  { immediate: true } // Run immediately on mount to apply saved theme
+)
 
 const isAutoLogin = import.meta.env.VITE_AUTO_LOGIN === 'true';
 </script>

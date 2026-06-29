@@ -29,6 +29,7 @@ export default defineConfig({
       ui: {
         colors: {
           primary: 'brand',
+          // primaryh: '#97fce4',
           // slate, gray or mist
           neutral: 'mist',
         },
@@ -58,6 +59,11 @@ export default defineConfig({
           },
         },
       },
+      theme: {
+        colors: {
+          primaryh: '#97fce4',
+        },
+      },
       autoImport: {
         imports: ['vue', 'vue-router', '@vueuse/core', 'pinia'],
         dts: 'src/auto-imports.d.ts',
@@ -80,11 +86,11 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 700, // Default is 500
+    chunkSizeWarningLimit: 2700, // Default is 500
     sourcemap: true,
   },
   server: {
-    allowedHosts: ['ftb.cc.cd'],
+    allowedHosts: ['ftb.cc.cd', '.ftb.cc.cd'],
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8080',

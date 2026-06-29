@@ -185,6 +185,7 @@ declare global {
   const unrefElement: typeof import('@vueuse/core').unrefElement
   const until: typeof import('@vueuse/core').until
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
+  const useAgentsStore: typeof import('./stores/agents').useAgentsStore
   const useAlertForBot: typeof import('./utils/alerts').useAlertForBot
   const useAlertsStore: typeof import('./stores/alertsStore').useAlertsStore
   const useAnimate: typeof import('@vueuse/core').useAnimate
@@ -611,6 +612,7 @@ declare module 'vue' {
     readonly unrefElement: UnwrapRef<typeof import('@vueuse/core')['unrefElement']>
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
+    readonly useAgentsStore: UnwrapRef<typeof import('./stores/agents')['useAgentsStore']>
     readonly useAlertForBot: UnwrapRef<typeof import('./utils/alerts')['useAlertForBot']>
     readonly useAlertsStore: UnwrapRef<typeof import('./stores/alertsStore')['useAlertsStore']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
