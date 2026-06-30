@@ -1,3 +1,4 @@
+<!-- src/views/CloningView.vue -->
 <script setup lang="ts">
 import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/vue'
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts'
@@ -643,6 +644,8 @@ watch(connectedAddress, async (addr) => {
     uncloneStatusMessage.value = ''
     approvedAgentDetails.value = null
     extraAgents.value = []
+    agentPrivateKey.value = ''
+    agentAddress.value = ''
   }
 })
 
@@ -897,7 +900,7 @@ onBeforeUnmount(async () => {
                 <template v-else>Setup Complete!</template>
               </h4>
             </div>
-            <p class="text-sm text-neutral-700 dark:text-neutral-300">
+            <p class="text-sm text-neutral-700 dark:text-neutral-300 text-left">
               <template v-if="dbDisplayMode === 'cloned_done'">
                 The cloning process is finished. Your dashboard is live and ready.
               </template>

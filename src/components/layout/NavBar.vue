@@ -227,7 +227,7 @@ function editBotLogin(botId: string) {
 
 <template>
   <header>
-    <div class="flex border-b border-primary">
+    <div class="flex border-b dark:border-neutral-600 border-neutral-400">
       <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
         <AppIcon class="h-13 w-13 ml-2" />
         <!-- <AppText class="md:hidden lg:inline" />

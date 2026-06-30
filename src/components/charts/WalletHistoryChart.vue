@@ -348,9 +348,9 @@ const walletHistoryOptions: ComputedRef<EChartsOption> = computed(() => {
   />
   <div v-else class="flex flex-col items-center justify-center h-full gap-2">
     <p class="text-gray-500">No historic wallet data available.</p>
-    <p class="text-gray-500 text-sm">
+    <!-- <p class="text-gray-500 text-sm">
       You may need to update your ftb version to have historic wallet balance data available.
-    </p>
+    </p> -->
   </div>
 </template>
 
