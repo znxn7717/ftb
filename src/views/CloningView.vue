@@ -658,14 +658,14 @@ onBeforeUnmount(async () => {
   <div class="mx-auto mt-5 max-w-4xl space-y-4">
     <!-- Header -->
     <div class="text-center space-y-8 mb-2">
-      <h1>❢ this part is developing... don't try...</h1>
+      <!-- <h1>❢ this part is developing... don't try...</h1> -->
       <h2 class="inline-flex items-baseline text-3xl font-bold dark:text-neutral-100 mt-[-2rem]">
         3 steps to cloning 
         <AppIcon class="h-13 w-13 ml-5 mr-5 relative top-4" />
         AI trading agent
       </h2>
-      <p class="text-neutral-600 dark:text-neutral-400">
-        1. Connect Wallet > 2. Approve Agent > 3. Approve Fee Share
+      <p class="text-neutral-600 dark:text-neutral-400 font-medium tracking-wide">
+        1. Connect Wallet ▸ 2. Approve Agent ▸ 3. Approve Fee Share
       </p>
       <p class="text-sm mt-3 dark:text-neutral-100 leading-loose">
         After that, it will run on your 
@@ -933,7 +933,7 @@ onBeforeUnmount(async () => {
         <h3 class="text-xl font-semibold"><span class="mr-5">ⓘ</span>README</h3>
       </template>
       <ol class="space-y-4 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-inside">
-        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Connect Wallet:</span> Your wallet address is used to identify your agent. No funds are transferred - your account is managed as <span class="text-yellow-500 font-semibold">non-custodial</span> by the agent.</li>
+        <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Connect Wallet:</span> Your wallet address is used to identify your agent. No funds are transferred or transactions will be requested - your account is managed as <span class="text-yellow-500 font-semibold">non-custodial</span> by the agent.</li>
         <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Approve Agent:</span> A dedicated trading agent is approved on Hyperliquid to execute trades on your behalf. Valid for 180 days.</li>
         <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Approve Fee Share:</span> You approve a max 0.1% fee, which allows agent to operate. This is a native management fee mechanism - no extra charges.</li>
         <li><span class="text-neutral-800 dark:text-neutral-200 font-semibold text-md">Cloning:</span> After approvals, your personal ftb instance is cloned with its own dashboard to monitor trades and metrics. Cloning preparation takes less than 3 minutes.</li>

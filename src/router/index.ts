@@ -14,7 +14,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/trade',
-    name: 'ftb trading',
+    name: 'ftb Trading',
     component: () => import('@/views/TradingView.vue'),
   },
   {
@@ -34,7 +34,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/dashboard',
-    name: 'ftb dashboard',
+    name: 'ftb Dashboard',
     component: () => import('@/views/DashboardView.vue'),
   },
   {
@@ -58,12 +58,12 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/cloning',
-    name: 'ftb cloning',
+    name: 'ftb Cloning',
     component: () => import('@/views/CloningView.vue'),
   },
   {
     path: '/settings',
-    name: 'ftb settings',
+    name: 'ftb Settings',
     component: () => import('@/views/SettingsView.vue'),
   },
   {

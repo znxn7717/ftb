@@ -137,7 +137,7 @@ const navItems = ref([
     label: 'Cloning',
     to: '/cloning',
     visible: computed(() => isAutoLogin),
-    icon: 'i-mdi-format-list-bulleted',
+    icon: 'i-mdi-source-branch',
   },
   {
     label: 'Settings',
@@ -235,19 +235,39 @@ function editBotLogin(botId: string) {
       </RouterLink>
       <div class="flex justify-between w-full text-center items-center ms-3">
         <div class="items-center hidden md:flex gap-5 ms-5">
-          <UButton
+          <template
             v-for="(item, index) in navItems.filter(
               (item) => (item.visible ?? true) && !item.mobileOnly,
             )"
             :key="index"
-            :to="item.to"
-            variant="link"
-            size="xl"
-            color="neutral"
-            active-class="underline"
           >
-            {{ item.label }} 
-          </UButton>
+            <!-- Cloning tab - special highlighted style -->
+            <UButton
+              v-if="item.label === 'Cloning'"
+              :to="item.to"
+              variant="link"
+              size="xl"
+              color="neutral"
+              active-class="underline"
+              class="animate-pulse-subtle"
+            >
+              <UIcon v-if="item.icon" :name="item.icon" class="mr-[-5px] cloning-icon" />
+              {{ item.label }}
+            </UButton>
+
+            <!-- Regular nav items -->
+            <UButton
+              v-else
+              :to="item.to"
+              variant="link"
+              size="xl"
+              color="neutral"
+              active-class="underline"
+            >
+              <UIcon v-if="item.icon" :name="item.icon" class="mr-[-5px]" />
+              {{ item.label }}
+            </UButton>
+          </template>
           <ThemeSelect />
         </div>
 
@@ -276,7 +296,7 @@ function editBotLogin(botId: string) {
               rel="noopener noreferrer"
               class="!text-neutral-500 cursor-pointer text-xs mr-4 inline-flex flex-col items-center"
             >
-              <span>running on:</span>
+              <span>running on Hyper<span class="italic">liquid</span>:</span>
               <span>{{ wallet }}</span>
             </a>
             <BotEntry
@@ -371,3 +391,27 @@ function editBotLogin(botId: string) {
     </div>
   </header>
 </template>
+
+<style scoped>
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.1); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s linear infinite;
+}
+
+@keyframes cloning-icon-anim {
+  0%   { transform: rotate(0deg)   scale(1); }
+  25%  { transform: rotate(15deg)  scale(1.15); }
+  75%  { transform: rotate(-15deg) scale(1.15); }
+  100% { transform: rotate(0deg)   scale(1); }
+}
+
+.cloning-icon {
+  display: inline-block;
+  margin-right: -5px;
+  animation: cloning-icon-anim 3s linear infinite;
+}
+</style>
