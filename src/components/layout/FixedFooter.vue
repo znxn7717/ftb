@@ -7,7 +7,8 @@ const botStore = useBotStore();
     <!-- Only visible on xs (phone) viewport! -->
     <!-- <hr class="my-0 border-primary" /> -->
     <div class="flex gap-2 justify-center items-center p-2">
-      <div class="text-left text-sm">
+      v. <strong>{{ botStore.activeBot.version }}</strong>
+      <!-- <div class="text-left text-sm">
         Powered by 
       </div>
       <div class="flex justify-center">
@@ -20,7 +21,7 @@ const botStore = useBotStore();
           <AppIcon class="h-9 w-9" />
           <AppText />
         </a>
-      </div>
+      </div> -->
     </div>
   </footer>
 </template>
